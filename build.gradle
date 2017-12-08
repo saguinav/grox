@@ -33,6 +33,7 @@ buildscript {
 }
 
 allprojects {
+  apply plugin: 'jacoco'
   repositories {
     jcenter()
   }
@@ -51,6 +52,45 @@ allprojects {
 subprojects { project ->
   group = GROUP
   version = VERSION_NAME
+}
+
+//https://gist.github.com/aalmiray/e6f54aa4b3803be0bcac
+task jacocoTestReport(type: JacocoReport) {
+  sourceDirectories = files()
+  classDirectories = files()
+  executionData = files()
+
+  reports {
+    html.enabled = true
+    xml.enabled = true
+    csv.enabled = false
+  }
+
+  // Work-around to allow us to build list of executionData files in doFirst
+  onlyIf = {
+    true
+  }
+
+  /*
+   * Builds list of source dirs, class dirs, and executionData files
+   * when task is run, not at script evaluation time
+   */
+  doFirst {
+    subprojects.findAll { subproject ->
+      //we care only if the project is a library and is a rx2 implementation
+      !subproject.pluginManager.hasPlugin('com.android.application') && !subproject.name.endsWith("rx")
+    }.each { subproject ->
+      additionalSourceDirs files((Set<File>) subproject.sourceSets.main.allJava.srcDirs)
+      additionalClassDirs((FileCollection) subproject.sourceSets.main.output)
+      if (subproject.pluginManager.hasPlugin('jacoco')) {
+        executionData subproject.tasks.jacocoTestReport.executionData
+      }
+    }
+
+    executionData = files(executionData.findAll {
+      it.exists()
+    })
+  }
 }
 
 task clean(type: Delete) {
