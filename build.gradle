@@ -33,7 +33,6 @@ buildscript {
 }
 
 allprojects {
-  apply plugin: 'jacoco'
   repositories {
     jcenter()
   }
@@ -42,6 +41,7 @@ allprojects {
     // plugin for all (checkstyle, pmd and findbugs)
     quality_gradle_java_file = "config/quality_java.gradle"
     quality_gradle_android_file = "config/quality_android.gradle"
+    jacoco_gradle_java_file = "config/jacoco_java.gradle"
 
     // config files
     pmd_rulesetFile = "${project.rootDir}/config/pmd/pmd-ruleset.xml"
@@ -53,6 +53,8 @@ subprojects { project ->
   group = GROUP
   version = VERSION_NAME
 }
+
+apply plugin: 'jacoco'
 
 //https://gist.github.com/aalmiray/e6f54aa4b3803be0bcac
 task jacocoTestReport(type: JacocoReport) {
@@ -77,14 +79,11 @@ task jacocoTestReport(type: JacocoReport) {
    */
   doFirst {
     subprojects.findAll { subproject ->
-      //we care only if the project is a library and is a rx2 implementation
-      !subproject.pluginManager.hasPlugin('com.android.application') && !subproject.name.endsWith("rx")
+      subproject.pluginManager.hasPlugin('jacoco')
     }.each { subproject ->
       additionalSourceDirs files((Set<File>) subproject.sourceSets.main.allJava.srcDirs)
       additionalClassDirs((FileCollection) subproject.sourceSets.main.output)
-      if (subproject.pluginManager.hasPlugin('jacoco')) {
-        executionData subproject.tasks.jacocoTestReport.executionData
-      }
+      executionData subproject.tasks.jacocoTestReport.executionData
     }
 
     executionData = files(executionData.findAll {

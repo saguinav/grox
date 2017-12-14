@@ -22,12 +22,4 @@ license {
   }
 }
 
-jacocoTestReport {
-  dependsOn tasks.test
-  reports {
-    xml.enabled true
-    html.enabled false
-  }
-}
-
-rootProject.tasks.jacocoTestReport.dependsOn tasks.test
+apply from: rootProject.file("${jacoco_gradle_java_file}")
